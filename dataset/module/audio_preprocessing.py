@@ -98,7 +98,7 @@ def get_short_song(data_dir, output_dir):
         for song in short_song:
             f.write(song + "\n")
             
-get_short_song("data/audio_feature/", "data/")
+# get_short_song("data/audio_feature/", "data/")
 
 
 

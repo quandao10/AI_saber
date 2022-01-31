@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.base_model import *
-from argparse import Namespace
+import numpy as np
 
 
 class FACT(nn.Module):
@@ -45,66 +45,29 @@ class FACT(nn.Module):
         output = self.cross_modal_layer(map_feature, audio_feature)
         return output
 
-    def infer_auto_regressive(self, map_input, audio_input, step=2400):
+    def infer_auto_regressive(self, map_feature, audio_feature, bpm, args):
         outputs = []
-        audio_seq_len = self.args.audio_input_length
-        for i in range(step):
-            audio_input = audio_input[:, i:i + audio_seq_len]
-            if audio_input.size(1) < audio_seq_len:
+        audio_seq_len = args.audio_input_length
+        map_input = map_feature
+        bps = int(np.floor(bpm/60))
+        if bps == 0:
+            bps = 1
+        # bf = bps * args.map_fr
+        for i in range(args.step):
+            # step = i * args.audio_fr
+            audio_input = audio_feature[i:i+audio_seq_len, :]
+            if audio_input.size(0) < audio_seq_len:
+                # print(audio_input.size())
                 break
-            output = self.forward(map_input, audio_input)
-            output = output[:, 0:48, :]  # only keep the first 48 frames (first beat)
+            output = self.forward(map_input, audio_input)[0]
+            output = torch.argmax(output, dim=-1)
+            output = output[0:bps, :]  # only keep the first frames (first beat)
             outputs.append(output)
-            map_input = torch.cat([map_input[:, 48:, :], output], dim=1)
-        return torch.cat(outputs, dim=1)
+            map_input = torch.cat([map_feature[bps:, :], output], dim=0)
+        return torch.cat(outputs, dim=0)
 
     def compute_loss(self, pred, target):
         _, target_len_seq, _ = target.size()
         diff = pred - target[:, :target_len_seq, :]
         l2_loss = torch.norm(diff, dim=2)
         return l2_loss.mean()
-
-
-args_sample = {
-    "map_path": "./data/map_feature/",
-    "audio_path": "./data/audio_feature/",
-    "difficulty_path": "./data/difficulty_list/easy_file.pkl",
-    "level": "Easy",
-    "audio_input_length": 10 * 60,  # 10 seconds
-    "map_input_length": 20 * 48,  # 20 beats
-    "map_target_length": 10 * 48,  # 10 beats
-    "map_target_shift": 20 * 48,  # 20 beats
-    "bpm_path": "./data/audio_tempo.json",
-    "map_dimensions": 12,
-    "audio_dimensions": 35,
-    "batch_size": 16,
-    "epochs": 100,
-    "lr": 0.001,
-    "momentum": 0.9,
-    "seed": 1,
-    "log_interval": 10,
-    "model": "fact",
-    "cm_hidden_size": 800,
-    "cm_num_layers": 2,
-    "cm_num_heads": 10,
-    "cm_intermediate_size": 1024,
-    "cm_out_size": 12 * 19,
-    "map_hidden_size": 800,
-    "map_num_layers": 2,
-    "map_num_heads": 10,
-    "map_intermediate_size": 1024,
-    "audio_hidden_size": 800,
-    "audio_num_layers": 2,
-    "audio_num_heads": 10,
-    "audio_intermediate_size": 3072,
-    "num_classes": 20,
-}
-# arg_ns = Namespace(**args_sample)
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model = FACT(arg_ns).to(device)
-# audio_input = torch.randn(args_sample["batch_size"], args_sample["audio_input_length"], args_sample["audio_dimensions"]).to(device)
-# map_input = torch.randint(0, 19, (args_sample["batch_size"], args_sample["map_input_length"], args_sample["map_dimensions"]), dtype=torch.float32).to(device)
-#
-# print(audio_input.size(), map_input.size())
-# output = model(map_input, audio_input)
-# print(output.size())

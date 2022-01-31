@@ -3,13 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import neptune.new as neptune
 
-run = neptune.init(
-    project="quan-ml/AISABER",
-    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI1NDgzYmY3Zi1kMjZjLTRkNjUtYWY2Ny0wODAwZDBjNjkwNGUifQ==",
-)  # your credentials here
-
 
 def train(args, model, beat_dataloader, device, criterion, optimizer):
+    run = neptune.init(
+    project="quan-ml/AISABER",
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI1NDgzYmY3Zi1kMjZjLTRkNjUtYWY2Ny0wODAwZDBjNjkwNGUifQ==",
+    )  # your credentials here
     params = vars(args)
     run["parameters"] = params
     lr_schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2, verbose=True)

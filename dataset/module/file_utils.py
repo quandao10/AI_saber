@@ -90,6 +90,7 @@ def verify_difficulty_file(difficulty_file_dir, map_dir):
 
 
 # data = load_pkl_file("dataset/data/difficulty_list/expert_plus_file.pkl")
+# print(data)
 # del data["cceed0e357601240069a2cdd529505d3c8bac6b5.zip"]
 # del data["195fad64589a3b4828979b7d617815c55e887ecb.zip"]
 # with open("dataset/data/difficulty_list/expert_plus_file.pkl", "wb") as f:
